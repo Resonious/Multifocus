@@ -1,15 +1,25 @@
 <script>
-  // TODO load these bad boys from localstorage or something
-  let tasks = [];
+  // Master list of tasks
+  let tasks = JSON.parse(window.localStorage.getItem('tasks')) || [];
+  // Save tasks
+  $: window.localStorage.setItem('tasks', JSON.stringify(tasks));
 
   // Next ID to be used for new tasks
-  let nextId = tasks.length;
+  let nextId = JSON.parse(window.localStorage.getItem('nextId')) || tasks.length;
+  // Save nextId
+  $: window.localStorage.setItem('nextId', JSON.stringify(nextId));
 
   // Toggle functionality
-  let enabled = true;
+  let enabled = window.localStorage.getItem('enabled') === null ?
+     true : JSON.parse(window.localStorage.getItem('enabled'));
+  // Save enabled
+  $: window.localStorage.setItem('enabled', JSON.stringify(enabled));
 
   // How long between notifications (in minutes)
-  let notificationPeriodMinutes = 1.1;
+  let notificationPeriodMinutes = JSON.parse(window.localStorage.getItem('period')) || 2.0;
+  // Save period
+  $: window.localStorage.setItem('period', JSON.stringify(notificationPeriodMinutes));
+
   $: notificationPeriodMilliseconds =
     (notificationPeriodMinutes > 0.005) ? notificationPeriodMinutes * 60 * 1000 : 1000;
 
@@ -24,6 +34,25 @@
     tasks = [...tasks, { id: nextId++, content: '' }];
   }
 
+  // Select another task
+  let notification;
+  let selectedTask;
+  $: selectedTaskId = selectedTask ? selectedTask.id : null;
+
+  function nextTask() {
+    if (notification) { notification.close() }
+    if (tasks.length <= 1) return;
+
+    let taskIndex = Math.floor(Math.random() * tasks.length);
+    while (tasks[taskIndex].id === selectedTaskId)
+      taskIndex = Math.floor(Math.random() * tasks.length);
+
+    selectedTask = tasks[taskIndex];
+    const strippedContent = selectedTask.content.replace(/(<([^>]+)>)/ig, ' ');
+
+    notification = new Notification('Multifocus', { body: strippedContent })
+  }
+
   // Get permission to send notifiactions
   Notification.requestPermission().then((permission) => {
     if (permission !== 'granted') {
@@ -33,21 +62,12 @@
   });
 
   // Send notifications every once in awhile
-  let notification;
-  let selectedTaskId;
   $: interval = (
     clearInterval(interval) ||
+    !enabled ||
     setInterval(
       () => {
-        if (notification) { notification.close() }
-        if (!enabled) return;
-        const task = tasks[Math.floor(Math.random() * tasks.length)];
-        if (task == undefined) return;
-
-        const strippedContent = task.content.replace(/(<([^>]+)>)/ig, ' ');
-
-        selectedTaskId = task.id;
-        notification = new Notification('Multifocus', { body: strippedContent })
+        nextTask();
       },
       notificationPeriodMilliseconds
     )
@@ -57,13 +77,15 @@
 <main>
   <label>
     Minutes between notifications
-    <input type='number' bind:value={notificationPeriodMinutes} />
+    <input type='number' step='0.01' bind:value={notificationPeriodMinutes} />
   </label>
 
   <label>
     <input type='checkbox' bind:checked={enabled} />
     Enabled
   </label>
+
+  <button class='next' on:click={nextTask}>Next</button>
 
   <div class='tasklist'>
     {#each tasks as {id, content}}
@@ -137,5 +159,12 @@
     border-radius: 0;
     background-color: #9f9ff8;
     padding: 2em;
+  }
+
+  .next {
+    border: none;
+    border-radius: 0;
+    background-color: #9f9ff8;
+    padding: 1em 3em 1em 3em;
   }
 </style>
