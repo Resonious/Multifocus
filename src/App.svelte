@@ -20,6 +20,7 @@
   // Save period
   $: window.localStorage.setItem('period', JSON.stringify(notificationPeriodMinutes));
 
+  // Period in ms for setInterval
   $: notificationPeriodMilliseconds =
     (notificationPeriodMinutes > 0.005) ? notificationPeriodMinutes * 60 * 1000 : 1000;
 
@@ -89,7 +90,7 @@
 
   <div class='tasklist'>
     {#each tasks as {id, content}}
-      <div class='task' class:selected={selectedTaskId == id}>
+      <div class='task' class:selected={selectedTaskId === id}>
         <button class='remove' tabindex={id} data-task={id} on:click={removeTask}>⮾</button>
         <div class='taskbody' contenteditable=true bind:innerHTML={content}></div>
       </div>
