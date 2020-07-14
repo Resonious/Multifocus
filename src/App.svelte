@@ -32,7 +32,7 @@
     {#each tasks as {id, content}}
       <div class='task'>
         <button class='remove' data-task={id} on:click={removeTask}>⮾</button>
-        <div class='taskbody' contenteditable=true>{content}</div>
+        <div class='taskbody' contenteditable=true bind:innerHTML={content}></div>
       </div>
     {/each}
 
