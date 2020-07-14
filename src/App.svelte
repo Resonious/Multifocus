@@ -1,37 +1,65 @@
 <script>
-  export let name;
+  // TODO load these bad boys from localstorage or something
+  let tasks = [];
 
-  let tasks = [
-    {
-      id: 0,
-      content: 'one task'
-    },
-    {
-      id: 1,
-      content: 'two task'
-    }
-  ];
-
+  // Next ID to be used for new tasks
   let nextId = tasks.length;
 
+  // How long between notifications (in minutes)
+  let notificationPeriodMinutes = 1.1;
+  $: notificationPeriodMilliseconds =
+    (notificationPeriodMinutes > 0.005) ? notificationPeriodMinutes * 60 * 1000 : 1000;
+
+  // Remove an existing task
   function removeTask(event) {
     const id = event.target.dataset.task;
     tasks = tasks.filter(t => t.id != id);
   }
 
+  // Create a new task
   function createTask() {
-    tasks = tasks.concat([{
-      id: nextId++,
-      content: ''
-    }])
+    tasks = [...tasks, { id: nextId++, content: '' }];
   }
+
+  // Get permission to send notifiactions
+  Notification.requestPermission().then((permission) => {
+    if (permission !== 'granted') {
+      console.error("Can't do much if you deny notifications");
+      return;
+    }
+  });
+
+  // Send notifications every once in awhile
+  let notification;
+  let selectedTaskId;
+  $: interval = (
+    clearInterval(interval) ||
+    setInterval(
+      () => {
+        if (notification) { notification.close() }
+        const task = tasks[Math.floor(Math.random() * tasks.length)];
+        if (task == undefined) return;
+
+        const strippedContent = task.content.replace(/(<([^>]+)>)/ig, ' ');
+
+        selectedTaskId = task.id;
+        notification = new Notification('Multifocus', { body: strippedContent })
+      },
+      notificationPeriodMilliseconds
+    )
+  );
 </script>
 
 <main>
+  <label>
+    Minutes between notifications
+    <input type='number' bind:value={notificationPeriodMinutes} />
+  </label>
+
   <div class='tasklist'>
     {#each tasks as {id, content}}
-      <div class='task'>
-        <button class='remove' data-task={id} on:click={removeTask}>⮾</button>
+      <div class='task' class:selected={selectedTaskId == id}>
+        <button class='remove' tabindex={id} data-task={id} on:click={removeTask}>⮾</button>
         <div class='taskbody' contenteditable=true bind:innerHTML={content}></div>
       </div>
     {/each}
@@ -70,6 +98,10 @@
     margin: 10px;
   }
 
+  .selected {
+    border: 2px solid blue;
+  }
+
   .newtask {
     background-color: unset;
     border: unset;
@@ -77,7 +109,7 @@
 
   .taskbody {
     width: 100%;
-    min-height: calc(var(--boxsize) - var(--buttonsize));
+    min-height: calc((var(--boxsize) - var(--buttonsize)) * 0.9);
 
     white-space: pre-wrap;
   }
