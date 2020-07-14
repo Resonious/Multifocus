@@ -1,23 +1,44 @@
 <script>
   export let name;
 
-  let tasks = ['one', 'two'];
+  let tasks = [
+    {
+      id: 0,
+      content: 'one task'
+    },
+    {
+      id: 1,
+      content: 'two task'
+    }
+  ];
+
+  let nextId = tasks.length;
+
+  function removeTask(event) {
+    const id = event.target.dataset.task;
+    tasks = tasks.filter(t => t.id != id);
+  }
+
+  function createTask() {
+    tasks = tasks.concat([{
+      id: nextId++,
+      content: ''
+    }])
+  }
 </script>
 
 <main>
   <div class='tasklist'>
-    {#each tasks as task}
+    {#each tasks as {id, content}}
       <div class='task'>
-        <button class='remove'>⮾</button>
-        <div class='taskbody'>
-          {task}
-        </div>
+        <button class='remove' data-task={id} on:click={removeTask}>⮾</button>
+        <div class='taskbody' contenteditable=true>{content}</div>
       </div>
     {/each}
 
     <div class='task newtask'>
       <div class='taskbody'>
-        <button class='new'>New task</button>
+        <button class='new' on:click={createTask}>New task</button>
       </div>
     </div>
   </div>
@@ -30,6 +51,7 @@
     margin: 0 auto;
 
     --boxsize: 300px;
+    --buttonsize: 2em;
   }
 
   .tasklist {
@@ -54,23 +76,19 @@
   }
 
   .taskbody {
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: center;
-    align-items: center;
-
     width: 100%;
-    height: 100%;
+    min-height: calc(var(--boxsize) - var(--buttonsize));
+
+    white-space: pre-wrap;
   }
 
   .remove {
-    position: absolute;
-
     border: none;
     border-radius: 0;
     background-color: red;
-    width: 2em;
-    height: 2em;
+    width: var(--buttonsize);
+    height: var(--buttonsize);
+    padding: 0;
   }
 
   .new {
