@@ -5,6 +5,9 @@
   // Next ID to be used for new tasks
   let nextId = tasks.length;
 
+  // Toggle functionality
+  let enabled = true;
+
   // How long between notifications (in minutes)
   let notificationPeriodMinutes = 1.1;
   $: notificationPeriodMilliseconds =
@@ -37,6 +40,7 @@
     setInterval(
       () => {
         if (notification) { notification.close() }
+        if (!enabled) return;
         const task = tasks[Math.floor(Math.random() * tasks.length)];
         if (task == undefined) return;
 
@@ -54,6 +58,11 @@
   <label>
     Minutes between notifications
     <input type='number' bind:value={notificationPeriodMinutes} />
+  </label>
+
+  <label>
+    <input type='checkbox' bind:checked={enabled} />
+    Enabled
   </label>
 
   <div class='tasklist'>
