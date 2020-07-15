@@ -4,6 +4,9 @@
   // Save tasks
   $: window.localStorage.setItem('tasks', JSON.stringify(tasks));
 
+  // Task selection weights (not saved) (manually kept parallel with tasks)
+  let weights = tasks.map(() => 1);
+
   // Next ID to be used for new tasks
   let nextId = JSON.parse(window.localStorage.getItem('nextId')) || tasks.length;
   // Save nextId
@@ -16,7 +19,10 @@
   $: window.localStorage.setItem('enabled', JSON.stringify(enabled));
 
   // How long between notifications (in minutes)
-  let notificationPeriodMinutes = JSON.parse(window.localStorage.getItem('period')) || 2.0;
+  let notificationPeriodMinutes = (() => {
+    const loaded = parseInt(window.localStorage.getItem('period'));
+    return isNaN(loaded) ? 5 : loaded;
+  })();
   // Save period
   $: window.localStorage.setItem('period', JSON.stringify(notificationPeriodMinutes));
 
@@ -31,8 +37,10 @@
     if (restores.length === 0) return;
 
     const restoredTask = restores.pop();
-    tasks = [...tasks, restoredTask];
     restores = restores;
+
+    tasks   = [...tasks,   restoredTask];
+    weights = [...weights, 1];
   }
 
   // Remove an existing task
@@ -43,31 +51,48 @@
     if (index === -1) return;
 
     restores = [...restores, tasks[index]];
-    tasks.splice(index, 1);
-    tasks = tasks;
+    tasks    = [...tasks.slice(0, index),   ...tasks.slice(index+1)];
+    weights  = [...weights.slice(0, index), ...weights.slice(index+1)];
   }
 
   // Create a new task
   function createTask() {
-    tasks = [...tasks, { id: nextId++, content: '', editable: true }];
+    tasks   = [...tasks, { id: nextId++, content: '', editable: true }];
+    weights = [...weights, 1];
   }
 
-  // Select another task
+  // Task selection bookkeeping
   let notification;
   let selectedTask;
   $: selectedTaskId = selectedTask ? selectedTask.id : null;
 
+  // Adapted from https://stackoverflow.com/a/55671924
+  function chooseIndexWeighted(chances) {
+    var sum = chances.reduce((acc, el) => acc + el, 0);
+    var acc = 0;
+    chances = chances.map(el => (acc = el + acc));
+    var rand = Math.random() * sum;
+    return chances.filter(el => el <= rand).length;
+  }
+
+  // Select next task
   function nextTask() {
     if (notification) { notification.close() }
     if (tasks.length <= 1) return;
 
-    let taskIndex = Math.floor(Math.random() * tasks.length);
-    while (tasks[taskIndex].id === selectedTaskId)
-      taskIndex = Math.floor(Math.random() * tasks.length);
+    // Pick a task from weights
+    const index = chooseIndexWeighted(weights);
+    selectedTask = tasks[index];
 
-    selectedTask = tasks[taskIndex];
+    // Adjust weights (selected one goes down, other ones go up)
+    for (let i = 0; i < tasks.length; ++i) {
+      if (weights[i] === 0) weights[i] = 0.5;
+      else if (i == index)  weights[i] = 0;
+      else                  weights[i] *= 1.5;
+    }
+
+    // Show desktop notification
     const strippedContent = selectedTask.content.replace(/(<([^>]+)>)/ig, ' ');
-
     notification = new Notification('Multifocus', { body: strippedContent })
   }
 
@@ -110,9 +135,11 @@
   <button class='next' on:click={nextTask}>Next</button>
 
   <div class='tasklist'>
-    {#each tasks as task}
+    {#each tasks as task, i}
       <div class='task' class:selected={selectedTaskId === task.id}>
         <button class='remove' tabindex={task.id} data-task={task.id} on:click={removeTask}>⮾</button>
+
+        <span class='weight'>{weights[i]}</span>
 
         <label class='edit'>
           ✎
@@ -214,6 +241,10 @@
 
     white-space: pre-wrap;
     padding: 5px;
+  }
+
+  .weight {
+    color: #c4c4c4;
   }
 
   .edit {
