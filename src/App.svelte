@@ -24,10 +24,27 @@
   $: notificationPeriodMilliseconds =
     (notificationPeriodMinutes > 0.005) ? notificationPeriodMinutes * 60 * 1000 : 1000;
 
+  // Undo stack
+  let restores = [];
+
+  function putBack() {
+    if (restores.length === 0) return;
+
+    const restoredTask = restores.pop();
+    tasks = [...tasks, restoredTask];
+    restores = restores;
+  }
+
   // Remove an existing task
   function removeTask(event) {
     const id = event.target.dataset.task;
-    tasks = tasks.filter(t => t.id != id);
+    const index = tasks.findIndex(t => t.id == id);
+
+    if (index === -1) return;
+
+    restores = [...restores, tasks[index]];
+    tasks.splice(index, 1);
+    tasks = tasks;
   }
 
   // Create a new task
@@ -76,15 +93,19 @@
 </script>
 
 <main>
-  <label>
-    Minutes between notifications
-    <input type='number' step='0.01' bind:value={notificationPeriodMinutes} />
-  </label>
+  <div class='controls'>
+    <button class='putBack' disabled={restores.length === 0} on:click={putBack}>⎌</button>
 
-  <label>
-    <input type='checkbox' bind:checked={enabled} />
-    Enabled
-  </label>
+    <label>
+      <input type='checkbox' bind:checked={enabled} />
+      Enabled
+    </label>
+
+    <label>
+      Minutes between notifications
+      <input type='number' step='0.01' bind:value={notificationPeriodMinutes} />
+    </label>
+  </div>
 
   <button class='next' on:click={nextTask}>Next</button>
 
@@ -120,6 +141,42 @@
 
     --boxsize: 300px;
     --buttonsize: 2em;
+  }
+
+  .controls {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    margin-bottom: 0.5em;
+  }
+
+  .controls * {
+    margin-left: 1em;
+    margin-right: 1em;
+  }
+
+  .controls label {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
+  .controls label * {
+    margin: 5px;
+  }
+
+  .putBack {
+    border: none;
+    border-radius: 0;
+    background-color: #9f9ff8;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+
+    width: var(--buttonsize);
+    height: var(--buttonsize);
+  }
+
+  .putBack:disabled {
+    background: #dddde3;
   }
 
   .tasklist {
