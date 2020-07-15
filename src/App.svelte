@@ -32,7 +32,7 @@
 
   // Create a new task
   function createTask() {
-    tasks = [...tasks, { id: nextId++, content: '' }];
+    tasks = [...tasks, { id: nextId++, content: '', editable: true }];
   }
 
   // Select another task
@@ -89,17 +89,25 @@
   <button class='next' on:click={nextTask}>Next</button>
 
   <div class='tasklist'>
-    {#each tasks as {id, content}}
-      <div class='task' class:selected={selectedTaskId === id}>
-        <button class='remove' tabindex={id} data-task={id} on:click={removeTask}>⮾</button>
-        <div class='taskbody' contenteditable=true bind:innerHTML={content}></div>
+    {#each tasks as task}
+      <div class='task' class:selected={selectedTaskId === task.id}>
+        <button class='remove' tabindex={task.id} data-task={task.id} on:click={removeTask}>⮾</button>
+
+        <label class='edit'>
+          ✎
+          <input type='checkbox' tabindex={task.id} data-task={task.id} bind:checked={task.editable} />
+        </label>
+
+        {#if task.editable}
+          <div class='taskbody' contenteditable=true bind:innerHTML={task.content}></div>
+        {:else}
+          <div class='taskbody'>{@html task.content}</div>
+        {/if}
       </div>
     {/each}
 
     <div class='task newtask'>
-      <div class='taskbody'>
-        <button class='new' on:click={createTask}>New task</button>
-      </div>
+      <button class='new' on:click={createTask}>New task</button>
     </div>
   </div>
 </main>
@@ -120,6 +128,10 @@
   }
 
   .task {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+
     width: var(--boxsize);
     height: var(--boxsize);
     text-align: left;
@@ -141,9 +153,16 @@
 
   .taskbody {
     width: 100%;
-    min-height: calc((var(--boxsize) - var(--buttonsize)) * 0.9);
+    min-height: calc((var(--boxsize) - var(--buttonsize)));
 
     white-space: pre-wrap;
+    padding: 5px;
+  }
+
+  .edit {
+    height: 20px;
+    margin-right: 5px;
+    align-self: center;
   }
 
   .remove {
@@ -153,6 +172,7 @@
     width: var(--buttonsize);
     height: var(--buttonsize);
     padding: 0;
+    margin: 0;
   }
 
   .new {
@@ -160,6 +180,7 @@
     border-radius: 0;
     background-color: #9f9ff8;
     padding: 2em;
+    margin: 0;
   }
 
   .next {
