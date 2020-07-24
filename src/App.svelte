@@ -94,6 +94,9 @@
     // Show desktop notification
     const strippedContent = selectedTask.content.replace(/(<([^>]+)>)/ig, ' ');
     notification = new Notification('Multifocus', { body: strippedContent })
+    notification.onclick = () => {
+      document.getElementById(`task-${selectedTask.id}`).scrollIntoView();
+    };
   }
 
   // Get permission to send notifiactions
@@ -146,7 +149,7 @@
           <input type='checkbox' tabindex={task.id} data-task={task.id} bind:checked={task.editable} />
         </label>
 
-        <div class='taskbody-wrapper'>
+        <div id={`task-${task.id}`} class='taskbody-wrapper'>
           {#if task.editable}
             <div class='taskbody' contenteditable=true bind:innerHTML={task.content}></div>
           {:else}
