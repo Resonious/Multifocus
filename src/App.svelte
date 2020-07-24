@@ -146,11 +146,13 @@
           <input type='checkbox' tabindex={task.id} data-task={task.id} bind:checked={task.editable} />
         </label>
 
-        {#if task.editable}
-          <div class='taskbody' contenteditable=true bind:innerHTML={task.content}></div>
-        {:else}
-          <div class='taskbody'>{@html task.content}</div>
-        {/if}
+        <div class='taskbody-wrapper'>
+          {#if task.editable}
+            <div class='taskbody' contenteditable=true bind:innerHTML={task.content}></div>
+          {:else}
+            <div class='taskbody'>{@html task.content}</div>
+          {/if}
+        </div>
       </div>
     {/each}
 
@@ -168,6 +170,7 @@
 
     --boxsize: 300px;
     --buttonsize: 2em;
+    --contentsize: calc((var(--boxsize) - var(--buttonsize)));
   }
 
   .controls {
@@ -216,7 +219,8 @@
     flex-flow: row wrap;
     justify-content: space-between;
 
-    width: var(--boxsize);
+    flex-grow: 1;
+    min-width: var(--boxsize);
     height: var(--boxsize);
     text-align: left;
 
@@ -235,9 +239,15 @@
     border: unset;
   }
 
+  .taskbody-wrapper {
+    overflow-y: scroll;
+    width: 100%;
+    max-height: var(--contentsize);
+  }
+
   .taskbody {
     width: 100%;
-    min-height: calc((var(--boxsize) - var(--buttonsize)));
+    min-height: var(--contentsize);
 
     white-space: pre-wrap;
     padding: 5px;
