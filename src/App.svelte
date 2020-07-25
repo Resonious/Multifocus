@@ -76,9 +76,17 @@
   }
 
   // Select next task
-  function nextTask() {
+  async function nextTask() {
     if (notification) { notification.close() }
     if (tasks.length <= 1) return;
+
+    // Check permission real quick
+    const permission = await Notification.requestPermission()
+
+    if (permission !== 'granted') {
+      console.error("Can't do much if you deny notifications");
+      return;
+    }
 
     // Pick a task from weights
     const index = chooseIndexWeighted(weights);
@@ -98,14 +106,6 @@
       document.getElementById(`task-${selectedTask.id}`).scrollIntoView();
     };
   }
-
-  // Get permission to send notifiactions
-  Notification.requestPermission().then((permission) => {
-    if (permission !== 'granted') {
-      console.error("Can't do much if you deny notifications");
-      return;
-    }
-  });
 
   // Send notifications every once in awhile
   $: interval = (
