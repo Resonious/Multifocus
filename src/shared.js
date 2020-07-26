@@ -63,5 +63,5 @@ export function toNotification(task) {
   }
 
   // These are arguments to the Notification constructor!
-  return [header, { body }]
+  return [header, { body, data: task }]
 }

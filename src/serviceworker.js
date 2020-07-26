@@ -16,10 +16,27 @@ async function showTask() {
   ]);
 }
 
+async function openTask(notification) {
+  const clients = await self.clients.matchAll();
+
+  if (clients.length > 0) {
+    const client = clients[0];
+    client.postMessage({ newtasks: true });
+    return client.focus();
+  }
+  else {
+    return self.clients.openWindow(`/#task-${notification.data.id}`);
+  }
+}
+
 self.addEventListener('install', event => {
   // Hooray!
 });
 
 self.addEventListener('push', event => {
   event.waitUntil(showTask());
+});
+
+self.addEventListener('notificationclick', event => {
+  event.waitUntil(openTask(event.notification));
 });

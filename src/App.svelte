@@ -208,6 +208,14 @@
       .catch(error => {
         console.log('Service worker registration failed:', error);
       });
+
+    // Listen for messages
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.newtasks) {
+        console.log('Re-loading tasks');
+        load('tasks', v => tasks = v);
+      }
+    });
   } else {
     alert('Service workers are not supported.');
   }
