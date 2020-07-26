@@ -1,34 +1,65 @@
 <script>
   import {tick} from 'svelte';
+  import localForage from 'localforage';
+  import debounce from 'lodash.debounce';
+
+  import {pickTaskAndUpdateWeights, toNotification} from './shared.js';
 
   const pubKey = 'BJ7oD8OHR2U5iaJwqaDPoI652gS4WjdUoRwd2ubwm_cJ7jEhnMvNEqy9RezkqnJuvc8W03X_abaL-hlnjrwY1z4';
 
-  // Master list of tasks
-  let tasks = JSON.parse(window.localStorage.getItem('tasks')) || [];
-  // Save tasks
-  $: window.localStorage.setItem('tasks', JSON.stringify(tasks));
+  // Helper function for saving
+  function save(key) {
+    return debounce(
+      value => localForage.setItem(key, JSON.stringify(value)),
+      300
+    );
+  }
+  // Helper function for loading
+  function load(key, cb) {
+    localForage.getItem(key, (err, value) => {
+      if (!err && value != null) {
+        cb(JSON.parse(value))
+      }
+      else {
+        const old = window.localStorage.getItem(key);
+        if (old !== null && old !== undefined) {
+          cb(JSON.parse(old));
+        }
+      }
+    })
+  }
 
-  // Task selection weights (not saved) (manually kept parallel with tasks)
-  let weights = tasks.map(() => 1);
+  // Master list of tasks
+  let tasks = [];
+  load('tasks', v => tasks = v);
+  // Save tasks
+  const saveTasks = save('tasks');
+  $: saveTasks(tasks);
 
   // Next ID to be used for new tasks
-  let nextId = JSON.parse(window.localStorage.getItem('nextId')) || tasks.length;
+  let nextId = 0;
+  load('nextId', v => nextId = v);
   // Save nextId
-  $: window.localStorage.setItem('nextId', JSON.stringify(nextId));
+  const saveNextId = save('nextId');
+  $: saveNextId(nextId);
 
   // Toggle functionality
-  let enabled = window.localStorage.getItem('enabled') === null ?
-     true : JSON.parse(window.localStorage.getItem('enabled'));
+  let enabled = false;
+  load('enabled', v => enabled = v);
   // Save enabled
-  $: window.localStorage.setItem('enabled', JSON.stringify(enabled));
+  const saveEnabled = save('enabled');
+  $: saveEnabled(enabled);
 
   // How long between notifications (in minutes)
-  let notificationPeriodMinutes = (() => {
-    const loaded = parseInt(window.localStorage.getItem('period'));
-    return isNaN(loaded) ? 5 : loaded;
-  })();
+  let notificationPeriodMinutes = 5;
+  load('period', v => {
+    if (typeof(v) === 'number' && !isNaN(v)) {
+      notificationPeriodMinutes = v;
+    }
+  })
   // Save period
-  $: window.localStorage.setItem('period', JSON.stringify(notificationPeriodMinutes));
+  const savePeriod = save('period');
+  $: savePeriod(notificationPeriodMinutes);
 
   // Period in ms for setInterval
   $: notificationPeriodMilliseconds =
@@ -37,14 +68,14 @@
   // Undo stack
   let restores = [];
 
+  // Perform undo
   function putBack() {
     if (restores.length === 0) return;
 
     const restoredTask = restores.pop();
     restores = restores;
 
-    tasks   = [...tasks,   restoredTask];
-    weights = [...weights, 1];
+    tasks = [...tasks, restoredTask];
   }
 
   // Remove an existing task
@@ -56,19 +87,15 @@
 
     restores = [...restores, tasks[index]];
     tasks    = [...tasks.slice(0, index),   ...tasks.slice(index+1)];
-    weights  = [...weights.slice(0, index), ...weights.slice(index+1)];
   }
 
   // Create a new task
   function createTask() {
-    tasks   = [...tasks, { id: nextId++, content: '', editable: true }];
-    weights = [...weights, 1];
+    tasks = [...tasks, { id: nextId++, content: '', editable: true, weight: 1.0 }];
   }
 
   // Task selection bookkeeping
   let notification;
-  let selectedTask;
-  $: selectedTaskId = selectedTask ? selectedTask.id : null;
 
   // Adapted from https://stackoverflow.com/a/55671924
   function chooseIndexWeighted(chances) {
@@ -92,20 +119,12 @@
       return;
     }
 
-    // Pick a task from weights
-    const index = chooseIndexWeighted(weights);
-    selectedTask = tasks[index];
-
-    // Adjust weights (selected one goes down, other ones go up)
-    for (let i = 0; i < tasks.length; ++i) {
-      if (weights[i] === 0) weights[i] = 0.5;
-      else if (i == index)  weights[i] = 0;
-      else                  weights[i] *= 1.5;
-    }
+    // Select task
+    const selectedTask = pickTaskAndUpdateWeights(tasks);
+    tasks = tasks;
 
     // Show desktop notification
-    const strippedContent = selectedTask.content.replace(/(<([^>]+)>)/ig, ' ');
-    notification = new Notification('Multifocus', { body: strippedContent })
+    notification = new Notification(...toNotification(selectedTask));
     notification.onclick = () => {
       document.getElementById(`task-${selectedTask.id}`).scrollIntoView();
     };
@@ -166,9 +185,7 @@
     clearInterval(interval) ||
     !enabled ||
     setInterval(
-      () => {
-        nextTask();
-      },
+      () => nextTask(),
       notificationPeriodMilliseconds
     )
   );
@@ -226,10 +243,10 @@
 
   <div class='tasklist'>
     {#each tasks as task, i}
-      <div class='task' class:selected={selectedTaskId === task.id}>
+      <div class='task' class:selected={task.weight === 0}>
         <button class='remove' tabindex={task.id} data-task={task.id} on:click={removeTask}>⮾</button>
 
-        <span class='weight'>{weights[i]}</span>
+        <span class='weight'>{tasks[i].weight}</span>
 
         <label class='edit'>
           ✎
