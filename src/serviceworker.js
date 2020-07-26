@@ -17,7 +17,12 @@ async function showTask() {
 }
 
 async function openTask(notification) {
-  const clients = await self.clients.matchAll();
+  const clients = await self.clients.matchAll({
+    includeUncontrolled: true,
+    type: 'window'
+  });
+
+  notification.close();
 
   if (clients.length > 0) {
     const client = clients[0];
