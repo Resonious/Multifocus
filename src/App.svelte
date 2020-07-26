@@ -1,4 +1,8 @@
 <script>
+  import {tick} from 'svelte';
+
+  const pubKey = 'BJ7oD8OHR2U5iaJwqaDPoI652gS4WjdUoRwd2ubwm_cJ7jEhnMvNEqy9RezkqnJuvc8W03X_abaL-hlnjrwY1z4';
+
   // Master list of tasks
   let tasks = JSON.parse(window.localStorage.getItem('tasks')) || [];
   // Save tasks
@@ -107,6 +111,56 @@
     };
   }
 
+  // Subscribe to notifications
+  let subscription;
+  const ab2str = buf => String.fromCharCode.apply(null, new Uint16Array(buf));
+  $: subscriptionText = subscription ?
+    JSON.stringify(subscription, null, 2) : undefined;
+  async function subscribe() {
+    // Check for existing subscription
+    if (!subscription) {
+      subscription = await registration.pushManager.getSubscription();
+    }
+    if (subscription && window.confirm('Subscription exists. Remake it?')) {
+      if (await subscription.unsubscribe()) {
+        subscription = null;
+      }
+      else {
+        alert("Well... It failed to unsubscribe for some reason.");
+        return;
+      }
+    }
+
+    // Create new subscription if necessary
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: pubKey
+      });
+    }
+
+    // Present subscription to user. It's up to them to fire it..
+    console.log(subscription);
+    await tick();
+    const element = document.getElementById('subscription-text');
+    element.select();
+    document.execCommand('copy');
+  }
+
+  // Unsubscribe from notifications
+  function unsubscribe() {
+    if (!subscription) return;
+
+    const backup = subscription;
+    subscription.unsubscribe().then(result => {
+      if (!result) {
+        subscription = backup;
+        alert('Failed to unsubscribe somehow...');
+      }
+    });
+    subscription = null;
+  }
+
   // Send notifications every once in awhile
   $: interval = (
     clearInterval(interval) ||
@@ -118,6 +172,28 @@
       notificationPeriodMilliseconds
     )
   );
+
+  // Set up service worker
+  let registration;
+  if ('serviceWorker' in navigator) {
+    // Register a service worker hosted at the root of the
+    // site using the default scope.
+    navigator.serviceWorker.register('/build/serviceworker.js')
+      .then(r => {
+        registration = r;
+        console.log('Service worker registration succeeded:', registration);
+
+        return r.pushManager.getSubscription();
+      })
+      .then(sub => {
+        subscription = sub;
+      })
+      .catch(error => {
+        console.log('Service worker registration failed:', error);
+      });
+  } else {
+    alert('Service workers are not supported.');
+  }
 </script>
 
 <main>
@@ -133,6 +209,17 @@
       Minutes between notifications
       <input type='number' step='0.01' bind:value={notificationPeriodMinutes} />
     </label>
+
+    <button class='subscribe' on:click={subscribe}>Subscribe</button>
+    {#if subscription}
+      <button class='subscribe' on:click={unsubscribe}>Unsubscribe</button>
+    {/if}
+
+    <textarea
+      style={subscriptionText ? '' : 'display: none'}
+      id='subscription-text'
+      bind:value={subscriptionText}
+      ></textarea>
   </div>
 
   <button class='next' on:click={nextTask}>Next</button>
@@ -210,6 +297,13 @@
 
   .putBack:disabled {
     background: #dddde3;
+  }
+
+  .subscribe {
+    border: none;
+    border-radius: 0;
+    background-color: #9f9ff8;
+    padding: 0.5em 0.5em 0.5em 0.5em;
   }
 
   .tasklist {
