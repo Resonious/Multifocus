@@ -352,7 +352,7 @@
     justify-content: space-between;
 
     flex-grow: 1;
-    min-width: var(--boxsize);
+    width: var(--boxsize);
     height: var(--boxsize);
     text-align: left;
 
