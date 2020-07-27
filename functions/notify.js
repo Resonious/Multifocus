@@ -10,7 +10,7 @@ exports.handler = function(event, context, callback) {
 
   // Must be POST
   if (event.httpMethod.toLowerCase() !== 'post') {
-    callback(null, { statusCode: 400, body: 'No good' });
+    callback(null, { statusCode: 400, body: 'No good, please POST' });
     return;
   }
 

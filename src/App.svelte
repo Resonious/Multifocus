@@ -31,7 +31,8 @@
 
   // Master list of tasks
   let tasks = [];
-  load('tasks', v => tasks = v);
+  function loadTasks() { load('tasks', v => tasks = v); }
+  loadTasks();
   // Save tasks
   const saveTasks = save('tasks');
   $: saveTasks(tasks);
@@ -133,8 +134,17 @@
   // Subscribe to notifications
   let subscription;
   const ab2str = buf => String.fromCharCode.apply(null, new Uint16Array(buf));
+
   $: subscriptionText = subscription ?
     JSON.stringify(subscription, null, 2) : undefined;
+
+  $: if (subscription) {
+    window.addEventListener('focus', loadTasks);
+  }
+  else {
+    window.removeEventListener('focus', loadTasks);
+  }
+
   async function subscribe() {
     // Check for existing subscription
     if (!subscription) {
@@ -213,7 +223,7 @@
     navigator.serviceWorker.addEventListener('message', event => {
       if (event.newtasks) {
         console.log('Re-loading tasks');
-        load('tasks', v => tasks = v);
+        loadTasks();
       }
     });
   } else {
