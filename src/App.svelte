@@ -30,6 +30,7 @@
 
   // Helper function for loading - just loads 'key' then calls cb
   function load(key, cb) {
+    loaded[key] = false;
     localForage.getItem(key, (err, value) => {
       if (err) {
         alert(`Error loading ${key}: ${err}`);
@@ -37,7 +38,7 @@
       else if (value != null) {
         cb(JSON.parse(value));
       }
-      loaded[key] = true;
+      tick().then(() => loaded[key] = true);
     })
   }
 
