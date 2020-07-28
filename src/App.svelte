@@ -6,30 +6,41 @@
   import {pickTaskAndUpdateWeights, toNotification} from './shared.js';
 
   const pubKey = 'BJ7oD8OHR2U5iaJwqaDPoI652gS4WjdUoRwd2ubwm_cJ7jEhnMvNEqy9RezkqnJuvc8W03X_abaL-hlnjrwY1z4';
+  let loaded = {}
 
-  // Helper function for saving
+  // Helper function for saving - returns a function that saves to 'key'
   function save(key) {
     return debounce(
-      value => localForage.setItem(key, JSON.stringify(value)),
-      300
+      value => {
+        if (!loaded[key]) {
+          console.log(`SKIPPING saving ${key} since it's not loaded yet`)
+          return;
+        }
+
+        localForage.setItem(key, JSON.stringify(value), err => {
+          if (err) {
+            alert(`Error saving ${key}: ${err} - putting it into localstorage for backup`)
+            window.localStorage.setItem(key, JSON.stringify(value));
+          }
+        });
+      },
+      300, { leading: true }
     );
   }
-  // Helper function for loading
+
+  // Helper function for loading - just loads 'key' then calls cb
   function load(key, cb) {
     localForage.getItem(key, (err, value) => {
-      if (!err && value != null) {
-        cb(JSON.parse(value))
+      if (err) {
+        alert(`Error loading ${key}: ${err}`);
       }
-      else {
-        const old = window.localStorage.getItem(key);
-        if (old !== null && old !== undefined) {
-          cb(JSON.parse(old));
-        }
+      else if (value != null) {
+        cb(JSON.parse(value));
       }
+      loaded[key] = true;
     })
   }
 
-  // Master list of tasks
   let tasks = [];
   function loadTasks() { load('tasks', v => tasks = v); }
   loadTasks();
@@ -87,7 +98,7 @@
     if (index === -1) return;
 
     restores = [...restores, tasks[index]];
-    tasks    = [...tasks.slice(0, index),   ...tasks.slice(index+1)];
+    tasks    = [...tasks.slice(0, index), ...tasks.slice(index+1)];
   }
 
   // Create a new task

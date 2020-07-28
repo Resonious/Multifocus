@@ -35,7 +35,27 @@ async function openTask(notification) {
 }
 
 self.addEventListener('install', event => {
-  // Hooray!
+  event.waitUntil(
+    self.registration.showNotification(
+      'MFocus',
+      {
+        body: 'Installed! Ready to rumble.',
+        icon: '/images/notif.png'
+      }
+    )
+  )
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    self.registration.showNotification(
+      'MFocus',
+      {
+        body: 'Successfully updated!',
+        icon: '/images/notif.png'
+      }
+    )
+  )
 });
 
 self.addEventListener('push', event => {
