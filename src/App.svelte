@@ -308,6 +308,38 @@
     --boxsize: 300px;
     --buttonsize: 2em;
     --contentsize: calc((var(--boxsize) - var(--buttonsize)));
+
+    --buttoncolor: #9f9ff8;
+    --buttondisabledcolor: #dddde3;
+
+    --taskbody: aliceblue;
+    --taskborder: grey;
+    --selectedborder: blue;
+
+    --dangercolor: red;
+  }
+
+  .weight {
+    color: #c4c4c4;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    main {
+      --buttoncolor: #0b4209;
+      --buttondisabledcolor: #434344;
+      --taskbody: #462e15;
+      --taskborder: black;
+      --selectedborder: red;
+      --dangercolor: #590000;
+    }
+
+    .taskbody-wrapper {
+      scrollbar-color: #747475 #242323;
+    }
+
+    .weight {
+      color: black;
+    }
   }
 
   .controls {
@@ -335,7 +367,7 @@
   .putBack {
     border: none;
     border-radius: 0;
-    background-color: #9f9ff8;
+    background-color: var(--buttoncolor);
     padding: 0.5em 0.5em 0.5em 0.5em;
 
     width: var(--buttonsize);
@@ -343,13 +375,13 @@
   }
 
   .putBack:disabled {
-    background: #dddde3;
+    background: var(--buttondisabledcolor);
   }
 
   .subscribe {
     border: none;
     border-radius: 0;
-    background-color: #9f9ff8;
+    background-color: var(--buttoncolor);
     padding: 0.5em 0.5em 0.5em 0.5em;
   }
 
@@ -368,14 +400,14 @@
     height: var(--boxsize);
     text-align: left;
 
-    background-color: aliceblue;
-    border: 1px solid darkgrey;
+    background-color: var(--taskbody);
+    border: 1px solid var(--taskborder);
 
     margin: 10px;
   }
 
   .selected {
-    border: 2px solid blue;
+    border: 2px solid var(--selectedborder);
   }
 
   .newtask {
@@ -397,10 +429,6 @@
     padding: 5px;
   }
 
-  .weight {
-    color: #c4c4c4;
-  }
-
   .edit {
     height: 20px;
     margin-right: 5px;
@@ -410,7 +438,7 @@
   .remove {
     border: none;
     border-radius: 0;
-    background-color: red;
+    background-color: var(--dangercolor);
     width: var(--buttonsize);
     height: var(--buttonsize);
     padding: 0;
@@ -420,7 +448,7 @@
   .new {
     border: none;
     border-radius: 0;
-    background-color: #9f9ff8;
+    background-color: var(--buttoncolor);
     padding: 2em;
     margin: 0;
   }
@@ -428,7 +456,7 @@
   .next {
     border: none;
     border-radius: 0;
-    background-color: #9f9ff8;
+    background-color: var(--buttoncolor);
     padding: 1em 3em 1em 3em;
   }
 </style>

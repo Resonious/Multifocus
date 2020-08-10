@@ -67,3 +67,26 @@ button:not(:disabled):active {
 button:focus {
   border-color: #666;
 }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #2b2b2b;
+    color: #ddd;
+  }
+
+  input {
+    background-color: #373636;
+    border-color: black;
+    color: white;
+  }
+
+  button {
+    color: #ddd;
+    background-color: #f4f4f4;
+    outline: none;
+  }
+
+  button:active {
+    background-color: #0a2209;
+  }
+}
