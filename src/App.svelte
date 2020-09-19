@@ -104,7 +104,9 @@
 
   // Create a new task
   function createTask() {
-    tasks = [...tasks, { id: nextId++, content: '', editable: true, weight: 1.0 }];
+    const maxWeight = tasks.length === 0 ? 1.0 : Math.max(...tasks.map(t => t.weight));
+
+    tasks = [...tasks, { id: nextId++, content: '', editable: true, weight: maxWeight }];
   }
 
   // Task selection bookkeeping
